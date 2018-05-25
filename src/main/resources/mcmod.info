@@ -1,0 +1,16 @@
+[
+{
+  "modid": "cvcstats",
+  "name": "CvcStats",
+  "description": "Collects cvc statistics",
+  "version": "${version}",
+  "mcversion": "${mcversion}",
+  "url": "",
+  "updateUrl": "",
+  "authorList": ["Scribee"],
+  "credits": "",
+  "logoFile": "",
+  "screenshots": [],
+  "dependencies": []
+}
+]
