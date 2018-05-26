@@ -16,6 +16,9 @@ public class Game {
 		return "t:" + crimsScore + ",ct:" + copsScore;
 	}
 
+	/**
+	 * @return "Defusal" if the current game is a DefusalGame, "TDM" if the current game is a TDMGame, or "" if it is neither
+	 */
 	public String getGameType() {
 		if (this instanceof DefusalGame)
 			return "Defusal";
