@@ -100,7 +100,7 @@ public class CvcStats {
 				currentGame = new DefusalGame(currentRound.team, false);
 				currentGame.inProgress = true;
 			}
-			// if teams were just switched (current team is different from last team)
+			// if teams were just switched (current team is different from this message)
 			else if (currentGame.team == Team.CRIMS) {
 				System.out.println("swap teams");
 				
@@ -121,7 +121,7 @@ public class CvcStats {
 				currentGame = new DefusalGame(currentRound.team, false);
 				currentGame.inProgress = true;
 			}
-			// if teams were just switched (current team is different from last team)
+			// if teams were just switched (current team is different from this message)
 			else if (currentGame.team == Team.COPS) {
 				System.out.println("swap teams");
 				
@@ -138,21 +138,33 @@ public class CvcStats {
 			gettingMap = true;
 			currentGame = new TDMGame();
 			
-			new ScheduledCode(() -> getTDMTeam(), 5);
+			new ScheduledCode(() -> currentGame.team = getCurrentTeamFromSidebar(), 5);
 			
 			currentGame.inProgress = true;
 		}
-
+		// joined in-progress
+		// §r§6You are earning more coins, because you joined a game in progress!§r
+		else if (message.equals(S + "r" + S + "6You are earning more coins, because you joined a game in progress!" + S + "r")) {
+			System.out.println("Joined in-progress");
+			
+			Minecraft.getMinecraft().thePlayer.sendChatMessage("/map");
+			gettingMap = true;
+			
+			Team team = getCurrentTeamFromSidebar();
+			
+			currentRound = new DefusalRound(team);
+			
+			currentGame = new DefusalGame(team, true);
+			currentGame.inProgress = true;
+		}
+		
 		else if (currentGame != null && currentGame.inProgress) {
 			if (currentGame.getGameType().equals("Defusal")) {
 				if (message.length() > 5 && message.substring(0, 5).equals(S + "r" + S + "6+")) {
-					// if planted
-					// message.length() > 18 && 
 					if (currentRound.team == Team.CRIMS && message.contains(" (Planted Bomb")) {
 						System.out.println("planted");
 						currentRound.planted = true;
 					}
-					// if defused
 					else if (currentRound.team == Team.COPS && message.contains(" (Defused Bomb")) {
 						System.out.println("defused");
 						currentRound.defused = true;
@@ -180,8 +192,9 @@ public class CvcStats {
 				}
 				
 				// when defusal game ends
-				// this message is also shown in TDM games, but I don't want to use it as well
+				// this message is also shown in TDM games, but I don't want to use it for them as well
 				// §r                       §r§4§lCriminals won the game!§r
+				// §r                          §r§4§lCops won the game!§r
 				else if (message.equals(S + "r                       " + S + "r" + S + "4" + S + "lCriminals won the game!" + S + "r")) {
 					if (currentGame.team == Team.CRIMS) {
 						currentGame.wonGame = true;
@@ -190,6 +203,7 @@ public class CvcStats {
 					currentRound.winner = Team.CRIMS;
 					saveStats(currentRound.toString());
 
+					((DefusalGame) currentGame).addDefusalRound(currentRound);
 					saveStats(currentGame.toString());
 					currentGame.inProgress = false;
 				}
@@ -201,6 +215,7 @@ public class CvcStats {
 					currentRound.winner = Team.COPS;
 					saveStats(currentRound.toString());
 
+					((DefusalGame) currentGame).addDefusalRound(currentRound);
 					saveStats(currentGame.toString());
 					currentGame.inProgress = false;
 				}
@@ -216,6 +231,7 @@ public class CvcStats {
 				
 				List<String> sbValues = new ArrayList<String>();
 				sbValues = ScoreboardUtil.getSidebarScores(Minecraft.getMinecraft().theWorld.getScoreboard());
+				
 				// Your Points: §a0
 				// §4?§f Points: §a0§7/1,000
 				// §3?§f Points: §a0§7/1,000				
@@ -267,6 +283,21 @@ public class CvcStats {
 				
 				saveStats(currentGame.toString());
 				currentGame.inProgress = false;
+			}
+			
+			// Saves current game if player is sent to a different server
+			// §aSending you to mini79T...§r
+			else if (message.contains(S + "aSending you to") && message.endsWith("..." + S + "r")) {
+				if (currentGame.getGameType().equals("Defusal")) {
+					((DefusalGame) currentGame).addDefusalRound(currentRound);
+					
+					currentRound.winner = currentRound.team.getOpposite();
+					currentRound.dead = true;
+					
+					saveStats(currentRound.toString());
+				}
+				
+				saveStats(currentGame.toString());
 			}
 		}
 		// suicide nade
@@ -370,26 +401,33 @@ public class CvcStats {
 		config.save();
 	}
 	
-	private static void getTDMTeam() {
+	private static Team getCurrentTeamFromSidebar() {
 		if (Minecraft.getMinecraft().theWorld.getScoreboard() != null) {
 			List<String> sbValues = new ArrayList<String>();
-			//sbValues = getScoreboardData();
+
 			sbValues = ScoreboardUtil.getSidebarScores(Minecraft.getMinecraft().theWorld.getScoreboard());
 
 			for (String score : sbValues) {
 				System.out.println(score);
 
-				if (score.contains(String.valueOf('\u9291') + " Crims"))
-					currentGame.team = Team.CRIMS;
-				else if (score.contains(String.valueOf('\u9290') + " Cops"))
-					currentGame.team = Team.COPS;
+				if (score.contains(String.valueOf('\u9291') + " Crims")) {
+					return Team.CRIMS;
+				}
+				else if (score.contains(String.valueOf('\u9290') + " Cops")) {
+					return Team.COPS;
+				}
 			}
 		}
 		else {
 			System.out.println("no scoreboard");
 			if (Minecraft.getMinecraft().thePlayer != null) {
-				new ScheduledCode(() -> getTDMTeam(), 5);
+				new ScheduledCode(() -> getCurrentTeamFromSidebar(), 5);
+			}
+			else {
+				System.out.println("Player left server");
 			}
 		}
+		System.out.println("Something bad happened");
+		return null;
 	}
 }
