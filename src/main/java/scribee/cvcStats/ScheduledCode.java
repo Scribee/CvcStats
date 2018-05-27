@@ -13,10 +13,6 @@ public class ScheduledCode {
 		code = codeToRun;
 		ticks = ticksToWait;
 		
-		init();
-	}
-	
-	public void init() {
         MinecraftForge.EVENT_BUS.register(this);
 	}
 	
