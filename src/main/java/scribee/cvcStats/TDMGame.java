@@ -2,8 +2,9 @@ package scribee.cvcStats;
 
 public class TDMGame extends Game {
 	
-	public int points = 0; // points that the player has earned; team points stored in crimsScore, copsScore
+	public int points = 0; // points that the player has earned; team points are stored in crimsScore and copsScore
 	public int kills = 0;
+	public int assists = 0;
 	public int deaths = 0;
 	
 	public TDMGame() {
@@ -12,6 +13,6 @@ public class TDMGame extends Game {
 	
 	@Override
 	public String toString() {
-		return date + "," + wonGame + "," + team.getID() + "," + kills + "," + deaths + "," + points + "," + getGameScore();
+		return date + "," + wonGame + "," + team.getID() + "," + assists + "," + kills + "," + deaths + "," + points + "," + getGameScore();
 	}
 }

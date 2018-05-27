@@ -45,7 +45,7 @@ public class CvcStats {
 	@EventHandler
 	public void init(FMLInitializationEvent event) {
 		MinecraftForge.EVENT_BUS.register(this);
-        ClientCommandHandler.instance.registerCommand(new CvcStatsCommand());
+        ClientCommandHandler.instance.registerCommand(new CvcStatsCommand()); // just used to text scoreboard now, will eventually be used to show the gui
 	}
 
 	@SubscribeEvent
@@ -56,8 +56,9 @@ public class CvcStats {
 			name = Minecraft.getMinecraft().thePlayer.getDisplayNameString();
 			System.out.println(name);
 			
-			if (!config.getString("Name", CATEGORY_MISC, "", "Name of the player").equals(name))
+			if (!config.getString("Name", CATEGORY_MISC, "", "Name of the player").equals(name)) {
 				config.get(CATEGORY_MISC, "Name", "").set(name);
+			}
 		}
 
 		Matcher matcher = killfeedPattern.matcher(message);
@@ -169,6 +170,10 @@ public class CvcStats {
 						System.out.println("defused");
 						currentRound.defused = true;
 					}
+					else if (message.contains(" (Assist)")) {
+						System.out.println("assist");
+						currentRound.assists++;
+					}
 				}
 
 				// when defusal round ends
@@ -220,100 +225,104 @@ public class CvcStats {
 					currentGame.inProgress = false;
 				}
 			}
-			
-			// when TDM game ends
-			// §r                      §r§7Crims reached enough points!§r
-			// §r                      §r§7Cops reached enough points!§r
-			else if (message.equals(S + "r                      " + S + "r" + S + "7Crims reached enough points!" + S + "r")) {
-				if (currentGame.team == Team.CRIMS) {
-					currentGame.wonGame = true;
+			else if (currentGame.getGameType().equals("TDM")) {
+				if (message.length() > 5 && message.substring(0, 5).equals(S + "r" + S + "6+") && message.contains(" (Assist)")) {
+					((TDMGame) currentGame).assists++;
 				}
-				
-				List<String> sbValues = new ArrayList<String>();
-				sbValues = ScoreboardUtil.getSidebarScores(Minecraft.getMinecraft().theWorld.getScoreboard());
-				
-				// Your Points: §a0
-				// §4?§f Points: §a0§7/1,000
-				// §3?§f Points: §a0§7/1,000				
-				for (String score : sbValues) {
-					if (score.length() >= 15 && score.substring(0,15).equals("Your Points: " + S + "a")) {
-						((TDMGame) currentGame).points = Integer.parseInt(score.substring(15));
-						continue;
+				// when TDM game ends
+				// §r                      §r§7Crims reached enough points!§r
+				// §r                      §r§7Cops reached enough points!§r
+				else if (message.equals(S + "r                      " + S + "r" + S + "7Crims reached enough points!" + S + "r")) {
+					if (currentGame.team == Team.CRIMS) {
+						currentGame.wonGame = true;
 					}
-					Matcher tdmMatcher = tdmScoresPattern.matcher(score);
-					if (tdmMatcher.find()) {
-						if (tdmMatcher.group(1).equals("4" + String.valueOf('\u9291'))) {
-							currentGame.crimsScore = Integer.parseInt(tdmMatcher.group(2));
+
+					List<String> sbValues = new ArrayList<String>();
+					sbValues = ScoreboardUtil.getSidebarScores(Minecraft.getMinecraft().theWorld.getScoreboard());
+
+					// Your Points: §a0
+					// §4?§f Points: §a0§7/1,000
+					// §3?§f Points: §a0§7/1,000				
+					for (String score : sbValues) {
+						if (score.length() >= 15 && score.substring(0,15).equals("Your Points: " + S + "a")) {
+							((TDMGame) currentGame).points = Integer.parseInt(score.substring(15));
+							continue;
 						}
-						else if (tdmMatcher.group(1).equals("3" + String.valueOf('\u9290'))) {
-							currentGame.copsScore = Integer.parseInt(tdmMatcher.group(2));
-						}
-					}
-				}
-				
-				saveStats(currentGame.toString());
-				currentGame.inProgress = false;
-			}
-			else if (message.equals(S + "r                      " + S + "r" + S + "7Cops reached enough points!" + S + "r")) {
-				if (currentGame.team == Team.COPS) {
-					currentGame.wonGame = true;
-				}
-				
-				List<String> sbValues = new ArrayList<String>();
-				sbValues = ScoreboardUtil.getSidebarScores(Minecraft.getMinecraft().theWorld.getScoreboard());
-				// Your Points: §a0
-				// §4?§f Points: §a0§7/1,000
-				// §3?§f Points: §a0§7/1,000
-				for (String score : sbValues) {
-					System.out.println(score);
-					if (score.substring(0,15).equals("Your Points: " + S + "a")) {
-						((TDMGame) currentGame).points = Integer.parseInt(score.substring(15));
-						continue;
-					}
-					Matcher tdmMatcher = tdmScoresPattern.matcher(score);
-					if (tdmMatcher.find()) {
-						if (tdmMatcher.group(1).equals("4" + String.valueOf('\u9291'))) {
-							currentGame.crimsScore = Integer.parseInt(tdmMatcher.group(2));
-						}
-						else if (tdmMatcher.group(1).equals("3" + String.valueOf('\u9290'))) {
-							currentGame.copsScore = Integer.parseInt(tdmMatcher.group(2));
+						Matcher tdmMatcher = tdmScoresPattern.matcher(score);
+						if (tdmMatcher.find()) {
+							if (tdmMatcher.group(1).equals("4" + String.valueOf('\u9291'))) {
+								currentGame.crimsScore = Integer.parseInt(tdmMatcher.group(2));
+							}
+							else if (tdmMatcher.group(1).equals("3" + String.valueOf('\u9290'))) {
+								currentGame.copsScore = Integer.parseInt(tdmMatcher.group(2));
+							}
 						}
 					}
+
+					saveStats(currentGame.toString());
+					currentGame.inProgress = false;
 				}
-				
-				saveStats(currentGame.toString());
-				currentGame.inProgress = false;
+				else if (message.equals(S + "r                      " + S + "r" + S + "7Cops reached enough points!" + S + "r")) {
+					if (currentGame.team == Team.COPS) {
+						currentGame.wonGame = true;
+					}
+
+					List<String> sbValues = new ArrayList<String>();
+					sbValues = ScoreboardUtil.getSidebarScores(Minecraft.getMinecraft().theWorld.getScoreboard());
+					// Your Points: §a0
+					// §4?§f Points: §a0§7/1,000
+					// §3?§f Points: §a0§7/1,000
+					for (String score : sbValues) {
+						System.out.println(score);
+						if (score.length() > 15 && score.substring(0,15).equals("Your Points: " + S + "a")) {
+							((TDMGame) currentGame).points = Integer.parseInt(score.substring(15));
+							continue;
+						}
+						Matcher tdmMatcher = tdmScoresPattern.matcher(score);
+						if (tdmMatcher.find()) {
+							if (tdmMatcher.group(1).equals("4" + String.valueOf('\u9291'))) {
+								currentGame.crimsScore = Integer.parseInt(tdmMatcher.group(2));
+							}
+							else if (tdmMatcher.group(1).equals("3" + String.valueOf('\u9290'))) {
+								currentGame.copsScore = Integer.parseInt(tdmMatcher.group(2));
+							}
+						}
+					}
+
+					saveStats(currentGame.toString());
+					currentGame.inProgress = false;
+				}
 			}
 			
 			// Saves current game if player is sent to a different server
 			// §aSending you to mini79T...§r
-			else if (message.contains(S + "aSending you to") && message.endsWith("..." + S + "r")) {
+			if (message.startsWith(S + "aSending you to ") && message.endsWith("..." + S + "r")) {
 				if (currentGame.getGameType().equals("Defusal")) {
 					((DefusalGame) currentGame).addDefusalRound(currentRound);
-					
+
 					currentRound.winner = currentRound.team.getOpposite();
 					currentRound.dead = true;
-					
+
 					saveStats(currentRound.toString());
 				}
-				
+
 				saveStats(currentGame.toString());
 			}
-		}
-		// suicide nade
-		else if ((message.startsWith(S + "r" + S + "f" + String.valueOf('\u9283') + " ") || message.startsWith(S + "r" + S + "f" + String.valueOf('\u9279') + " ")) && message.substring(10).equals(name + S + "r")) {
-			config.get(CATEGORY_MISC, "suicidenades", 0).set(config.get(CATEGORY_MISC, "suicidenades", 0).getInt() + 1);
-			currentRound.dead = true;
-		}
-		// died from C4
-		else if (message.startsWith(S + "r" + S + "f" + String.valueOf('\u9276') + " ") && message.substring(10).equals(name + S + "r")) {
-			config.get(CATEGORY_MISC, "c4deaths", 0).set(config.get(CATEGORY_MISC, "c4deaths", 0).getInt() + 1);
-			currentRound.dead = true;
-		}
-		// died from fall damage
-		else if (message.startsWith(S + "r" + S + "f" + String.valueOf('\u9271') + String.valueOf('\u9272') + " ") && message.substring(11).equals(name + S + "r")) {
-			config.get(CATEGORY_MISC, "falldeaths", 0).set(config.get(CATEGORY_MISC, "falldeaths", 0).getInt() + 1);
-			currentRound.dead = true;
+			// suicide nade
+			else if ((message.startsWith(S + "r" + S + "f" + String.valueOf('\u9283') + " ") || message.startsWith(S + "r" + S + "f" + String.valueOf('\u9279') + " ")) && message.substring(10).equals(name + S + "r")) {
+				config.get(CATEGORY_MISC, "suicidenades", 0).set(config.get(CATEGORY_MISC, "suicidenades", 0).getInt() + 1);
+				currentRound.dead = true;
+			}
+			// died from C4
+			else if (message.startsWith(S + "r" + S + "f" + String.valueOf('\u9276') + " ") && message.substring(10).equals(name + S + "r")) {
+				config.get(CATEGORY_MISC, "c4deaths", 0).set(config.get(CATEGORY_MISC, "c4deaths", 0).getInt() + 1);
+				currentRound.dead = true;
+			}
+			// died from fall damage
+			else if (message.startsWith(S + "r" + S + "f" + String.valueOf('\u9271') + String.valueOf('\u9272') + " ") && message.substring(11).equals(name + S + "r")) {
+				config.get(CATEGORY_MISC, "falldeaths", 0).set(config.get(CATEGORY_MISC, "falldeaths", 0).getInt() + 1);
+				currentRound.dead = true;
+			}
 		}
 	}
 	

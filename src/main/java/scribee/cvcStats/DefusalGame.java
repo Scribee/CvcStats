@@ -2,14 +2,21 @@ package scribee.cvcStats;
 
 public class DefusalGame extends Game {
 	
-	public boolean joinedInProgressGame = false;
+	private boolean joinedInProgressGame = false;
+	
 	private int copKills = 0;
 	private int crimKills = 0;
+	
+	@SuppressWarnings("unused")
+	private int copAssists = 0;
+	@SuppressWarnings("unused")
+	private int crimAssists = 0;
 	
 	@SuppressWarnings("unused")
 	private int crimDeaths = 0;
 	@SuppressWarnings("unused")
 	private int copDeaths = 0;
+	
 	private int bombsDefused = 0;
 	private int bombsPlanted = 0;
 	
@@ -19,30 +26,38 @@ public class DefusalGame extends Game {
 	}
 
 	public void addDefusalRound(DefusalRound round) {
-		if (round.winner == Team.COPS)
+		if (round.winner == Team.COPS) {
 			copsScore++;
-		else if (round.winner == Team.CRIMS)
+		}
+		else if (round.winner == Team.CRIMS) {
 			crimsScore++;
+		}
 
 		if (round.team == Team.COPS) {
-			if (round.dead)
+			if (round.dead) {
 				copDeaths++;
+			}
 			
+			copAssists += round.assists;
 			copKills += round.kills;
 		}
 		else if (round.team == Team.CRIMS) {
-			if (round.dead)
+			if (round.dead) {
 				crimDeaths++;
+			}
 			
+			crimAssists += round.assists;
 			crimKills += round.kills;
 		}
 
-		if (round.planted)
+		if (round.planted) {
 			bombsPlanted++;
-		else if (round.defused)
+		}
+		else if (round.defused) {
 			bombsDefused++;
+		}
 
-		team = round.team; // game team will always be the team that the last round was
+		team = round.team; // means game team will always be the team that the last round was
 	}
 
 	public void swapTeams() {
@@ -53,6 +68,6 @@ public class DefusalGame extends Game {
 
 	@Override
 	public String toString() {
-		return "G," + date + "," + wonGame + "," + team.getID() + "," + copKills + "," + crimKills + "," + getGameScore() + "," + bombsPlanted + "," + bombsDefused + "," + joinedInProgressGame;
+		return "G," + date + "," + wonGame + "," + team.getID() + "," + copAssists + "," + copKills + "," + crimAssists + "," + crimKills + "," + getGameScore() + "," + bombsPlanted + "," + bombsDefused + "," + joinedInProgressGame;
 	}
 }
